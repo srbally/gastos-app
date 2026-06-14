@@ -13,7 +13,7 @@ function Avatar({ member, size = 30, ring }) {
 }
 
 /* ---------------- Sidebar ---------------- */
-function Sidebar({ view, setView, overBudgetCount }) {
+function Sidebar({ view, setView, overBudgetCount, tenantName }) {
   const nav = [
     { id: "resumen", label: "Resumen", icon: Icons.home },
     { id: "transacciones", label: "Transacciones", icon: Icons.list },
@@ -27,7 +27,7 @@ function Sidebar({ view, setView, overBudgetCount }) {
         <div className="brand-mark">{Icons.wallet}</div>
         <div>
           <div className="brand-name">Gastos</div>
-          <div className="brand-sub">Casa de los García</div>
+          <div className="brand-sub">{tenantName || 'Mi hogar'}</div>
         </div>
       </div>
 
@@ -68,7 +68,7 @@ function Sidebar({ view, setView, overBudgetCount }) {
 }
 
 /* ---------------- TopBar ---------------- */
-function TopBar({ title, sub, month, onPrevMonth, onNextMonth, helpMode, setHelpMode, onAdd, dark, toggleDark }) {
+function TopBar({ title, sub, month, onPrevMonth, onNextMonth, helpMode, setHelpMode, onAdd, dark, toggleDark, onLogout }) {
   return (
     <header className="topbar">
       <div style={{ flex: "0 0 auto" }}>
@@ -97,6 +97,12 @@ function TopBar({ title, sub, month, onPrevMonth, onNextMonth, helpMode, setHelp
         title="Modo ayuda" data-help-anchor="help">
         {Icons.help}
       </button>
+
+      {onLogout && (
+        <button className="icon-btn" onClick={onLogout} title="Cerrar sesión">
+          {Icons.logout}
+        </button>
+      )}
 
       <button className="btn btn-primary" onClick={onAdd} data-help-target data-tip="agregar">
         {React.cloneElement(Icons.plus, { size: 17 })}

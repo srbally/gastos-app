@@ -1,5 +1,5 @@
 /* ============================================================
-   Gastos — Datos mock, iconos y helpers
+   Gastos — Iconos, categorías y helpers de base de datos
    ============================================================ */
 
 /* ---------- Iconos (stroke, lucide-style) ---------- */
@@ -43,64 +43,154 @@ const Icons = {
   download: <Icon d={<><path d="M12 4v10"/><path d="m7 10 5 5 5-5"/><path d="M5 19h14"/></>} size={15} />,
   filter: <Icon d={<path d="M3 5h18l-7 8v5l-4 2v-7z"/>} size={15} />,
   sparkle: <Icon d={<path d="M12 3l1.6 4.8L18 9.4l-4.4 1.6L12 16l-1.6-5L6 9.4l4.4-1.6z"/>} />,
+  logout: <Icon d={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>} />,
 };
 
-/* ---------- Categorías ---------- */
+/* ---------- Categorías (estáticas) ---------- */
 const CATEGORIES = [
-  { id: "vivienda",   name: "Vivienda",      icon: Icons.home2, color: "var(--cat-vivienda)" },
-  { id: "comida",     name: "Comida",        icon: Icons.cart,  color: "var(--cat-comida)" },
-  { id: "transporte", name: "Transporte",    icon: Icons.car,   color: "var(--cat-transporte)" },
-  { id: "servicios",  name: "Servicios",     icon: Icons.bolt,  color: "var(--cat-servicios)" },
-  { id: "ocio",       name: "Ocio",          icon: Icons.film,  color: "var(--cat-ocio)" },
-  { id: "salud",      name: "Salud",         icon: Icons.heart, color: "var(--cat-salud)" },
-  { id: "otros",      name: "Otros",         icon: Icons.tag,   color: "var(--cat-otros)" },
+  { id: "vivienda",    name: "Vivienda",   icon: Icons.home2, color: "var(--cat-vivienda)" },
+  { id: "comida",      name: "Comida",     icon: Icons.cart,  color: "var(--cat-comida)" },
+  { id: "transporte",  name: "Transporte", icon: Icons.car,   color: "var(--cat-transporte)" },
+  { id: "servicios",   name: "Servicios",  icon: Icons.bolt,  color: "var(--cat-servicios)" },
+  { id: "ocio",        name: "Ocio",       icon: Icons.film,  color: "var(--cat-ocio)" },
+  { id: "salud",       name: "Salud",      icon: Icons.heart, color: "var(--cat-salud)" },
+  { id: "otros",       name: "Otros",      icon: Icons.tag,   color: "var(--cat-otros)" },
 ];
 const catById = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
 
-/* ---------- Miembros del hogar ---------- */
-const MEMBERS = [
-  { id: "ana",   name: "Ana",    initials: "A", color: "oklch(0.62 0.12 162)" },
-  { id: "luis",  name: "Luis",   initials: "L", color: "oklch(0.60 0.12 250)" },
-  { id: "sofia", name: "Sofía",  initials: "S", color: "oklch(0.66 0.12 320)" },
-];
-const memberById = (id) => MEMBERS.find(m => m.id === id) || MEMBERS[0];
-
-/* ---------- Presupuestos por categoría (mensual) ---------- */
-const BUDGETS = {
-  vivienda: 1200, comida: 650, transporte: 280,
-  servicios: 320, ocio: 250, salud: 180, otros: 150,
-};
-
-/* ---------- Transacciones del mes actual (mock) ---------- */
-const SEED_TX = [
-  { id: 1,  title: "Alquiler",            cat: "vivienda",   amount: 1150, member: "ana",   date: "2026-06-01", recurring: true },
-  { id: 2,  title: "Supermercado Día",    cat: "comida",     amount: 84.20, member: "luis",  date: "2026-06-12" },
-  { id: 3,  title: "Gasolina",            cat: "transporte", amount: 62.50, member: "luis",  date: "2026-06-11" },
-  { id: 4,  title: "Internet + móvil",    cat: "servicios",  amount: 59.99, member: "ana",   date: "2026-06-10", recurring: true },
-  { id: 5,  title: "Cine + cena",         cat: "ocio",       amount: 48.00, member: "sofia", date: "2026-06-09" },
-  { id: 6,  title: "Farmacia",            cat: "salud",      amount: 23.40, member: "ana",   date: "2026-06-08" },
-  { id: 7,  title: "Mercado fresco",      cat: "comida",     amount: 56.70, member: "sofia", date: "2026-06-07" },
-  { id: 8,  title: "Electricidad",        cat: "servicios",  amount: 78.30, member: "ana",   date: "2026-06-06", recurring: true },
-  { id: 9,  title: "Metro mensual",       cat: "transporte", amount: 54.00, member: "sofia", date: "2026-06-05", recurring: true },
-  { id: 10, title: "Spotify familiar",    cat: "ocio",       amount: 16.99, member: "luis",  date: "2026-06-04", recurring: true },
-  { id: 11, title: "Panadería",           cat: "comida",     amount: 12.30, member: "ana",   date: "2026-06-13" },
-  { id: 12, title: "Ferretería",          cat: "vivienda",   amount: 34.80, member: "luis",  date: "2026-06-03" },
-];
-
-/* Tendencia 6 meses (gasto total) — el último es "este mes" calculado en vivo */
-const TREND = [
-  { m: "Ene", v: 2980 }, { m: "Feb", v: 3120 }, { m: "Mar", v: 2870 },
-  { m: "Abr", v: 3340 }, { m: "May", v: 3050 }, { m: "Jun", v: null },
-];
+/* ---------- Miembros y presupuestos (dinámicos — se pueblan desde DB) ---------- */
+var MEMBERS = [];
+var BUDGETS = {};
+const memberById = (id) => MEMBERS.find(m => m.id === id) || { id, initials: '?', color: 'var(--muted)', name: 'Usuario' };
 
 const MONTHLY_INCOME = 4200;
 
-/* ---------- Helpers ---------- */
-const fmt = (n) => n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmt0 = (n) => Math.round(n).toLocaleString("es-ES");
+/* ---------- Helpers de formato ---------- */
+const fmt     = (n) => Number(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0    = (n) => Math.round(n).toLocaleString("es-ES");
 const fmtDate = (iso) => {
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 };
 
-Object.assign(window, { Icons, Icon, CATEGORIES, catById, MEMBERS, memberById, BUDGETS, SEED_TX, TREND, MONTHLY_INCOME, fmt, fmt0, fmtDate });
+/* Normaliza una fila de la tabla expenses al formato interno de la app */
+const normalizeExpense = (e) => ({
+  id:        e.id,
+  title:     e.title,
+  cat:       e.category,
+  amount:    Number(e.amount),
+  member:    e.paid_by,
+  date:      e.date,
+  recurring: e.recurring || false,
+});
+
+/* ============================================================
+   Helpers de base de datos
+   ============================================================ */
+
+async function db_loadExpenses(tenantId, year, month) {
+  const pad  = (n) => String(n).padStart(2, '0');
+  const from = `${year}-${pad(month + 1)}-01`;
+  const to   = `${year}-${pad(month + 1)}-${pad(new Date(year, month + 1, 0).getDate())}`;
+  const { data, error } = await _sb
+    .from('expenses')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .gte('date', from)
+    .lte('date', to)
+    .order('date', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(normalizeExpense);
+}
+
+async function db_addExpense(tenantId, { title, amount, cat, member, date, recurring }) {
+  const { data, error } = await _sb
+    .from('expenses')
+    .insert({ tenant_id: tenantId, title, amount, category: cat, paid_by: member, date, recurring })
+    .select()
+    .single();
+  if (error) throw error;
+  return normalizeExpense(data);
+}
+
+async function db_loadMembers(tenantId) {
+  const { data, error } = await _sb
+    .from('tenant_members')
+    .select('role, profiles(id, full_name, initials, color)')
+    .eq('tenant_id', tenantId);
+  if (error) throw error;
+  return (data || [])
+    .filter(r => r.profiles)
+    .map(r => ({
+      id:       r.profiles.id,
+      name:     r.profiles.full_name || 'Usuario',
+      initials: r.profiles.initials  || (r.profiles.full_name || 'U')[0].toUpperCase(),
+      color:    r.profiles.color     || 'oklch(0.62 0.12 162)',
+      role:     r.role,
+    }));
+}
+
+async function db_loadBudgets(tenantId) {
+  const { data, error } = await _sb
+    .from('budgets')
+    .select('category, amount')
+    .eq('tenant_id', tenantId);
+  if (error) throw error;
+  const obj = {};
+  (data || []).forEach(b => { obj[b.category] = Number(b.amount); });
+  return obj;
+}
+
+async function db_loadTenant(tenantId) {
+  const { data, error } = await _sb
+    .from('tenants').select('*').eq('id', tenantId).single();
+  if (error) throw error;
+  return data;
+}
+
+async function db_loadProfile(userId) {
+  const { data, error } = await _sb
+    .from('profiles').select('*').eq('id', userId).single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data || null;
+}
+
+/* Totales de los últimos 5 meses desde DB; el 6.° (actual) se rellena en vivo */
+async function db_loadTrend(tenantId) {
+  const MNAMES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const now    = new Date();
+  const pad    = (n) => String(n).padStart(2, '0');
+  const months = [];
+  for (let i = 5; i >= 1; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ y: d.getFullYear(), m: d.getMonth(), label: MNAMES[d.getMonth()] });
+  }
+
+  const from = `${months[0].y}-${pad(months[0].m + 1)}-01`;
+  const prev = new Date(now.getFullYear(), now.getMonth(), 0);
+  const to   = `${prev.getFullYear()}-${pad(prev.getMonth() + 1)}-${pad(prev.getDate())}`;
+
+  const { data } = await _sb
+    .from('expenses').select('date, amount')
+    .eq('tenant_id', tenantId).gte('date', from).lte('date', to);
+
+  const sums = {};
+  (data || []).forEach(e => {
+    const key = e.date.slice(0, 7);
+    sums[key] = (sums[key] || 0) + Number(e.amount);
+  });
+
+  const trend = months.map(({ y, m, label }) => ({
+    m: label, v: sums[`${y}-${pad(m + 1)}`] || 0,
+  }));
+  trend.push({ m: MNAMES[now.getMonth()], v: null }); // mes actual → live
+  return trend;
+}
+
+Object.assign(window, {
+  Icon, Icons, CATEGORIES, catById,
+  MEMBERS, BUDGETS, memberById,
+  MONTHLY_INCOME, fmt, fmt0, fmtDate, normalizeExpense,
+  db_loadExpenses, db_addExpense, db_loadMembers,
+  db_loadBudgets, db_loadTenant, db_loadProfile, db_loadTrend,
+});
