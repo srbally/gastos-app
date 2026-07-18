@@ -50,6 +50,7 @@ function App() {
   const [profile,   setProfile]   = React.useState(null);
   const [tenant,    setTenant]    = React.useState(null);
   const [dataReady, setDataReady] = React.useState(false);
+  const [loadError, setLoadError] = React.useState(null);
 
   /* ── App ───────────────────────────────────────────────── */
   const [t, setTweak]     = useTweaks(TWEAK_DEFAULTS);
@@ -65,10 +66,12 @@ function App() {
 
   /* ── Escucha sesión ────────────────────────────────────── */
   React.useEffect(() => {
-    _sb.auth.getSession().then(({ data: { session } }) => setSession(session));
+    _sb.auth.getSession()
+      .then(({ data: { session } }) => setSession(session))
+      .catch(err => { console.error('getSession:', err); setSession(null); setLoadError(err); });
     const { data: { subscription } } = _sb.auth.onAuthStateChange((_, session) => {
       setSession(session);
-      if (!session) { setProfile(null); setTenant(null); setDataReady(false); }
+      if (!session) { setProfile(null); setTenant(null); setDataReady(false); setLoadError(null); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -76,31 +79,38 @@ function App() {
   /* ── Cuando llega sesión, carga perfil ─────────────────── */
   React.useEffect(() => {
     if (!session?.user?.id) return;
+    setLoadError(null);
     db_loadProfile(session.user.id).then(p => {
       setProfile(p);
       if (p?.current_tenant_id) loadTenantData(p.current_tenant_id);
-    });
+    }).catch(err => { console.error('loadProfile:', err); setLoadError(err); });
   }, [session?.user?.id]);
 
   async function loadTenantData(tenantId) {
     setDataReady(false);
-    const now = new Date();
-    const [ten, members, budgets, expenses, trendData] = await Promise.all([
-      db_loadTenant(tenantId),
-      db_loadMembers(tenantId),
-      db_loadBudgets(tenantId),
-      db_loadExpenses(tenantId, now.getFullYear(), now.getMonth()),
-      db_loadTrend(tenantId),
-    ]);
-    MEMBERS = members;   // actualiza globales usados por componentes legacy
-    BUDGETS = budgets;
-    setTenant(ten);
-    setTxns(expenses);
-    setTrend(trendData);
-    setCurYear(now.getFullYear());
-    setCurMonth(now.getMonth());
-    setDataReady(true);
-    if (!localStorage.getItem('gastos_tour_seen')) setTimeout(() => setTour(true), 700);
+    setLoadError(null);
+    try {
+      const now = new Date();
+      const [ten, members, budgets, expenses, trendData] = await Promise.all([
+        db_loadTenant(tenantId),
+        db_loadMembers(tenantId),
+        db_loadBudgets(tenantId),
+        db_loadExpenses(tenantId, now.getFullYear(), now.getMonth()),
+        db_loadTrend(tenantId),
+      ]);
+      MEMBERS = members;   // actualiza globales usados por componentes legacy
+      BUDGETS = budgets;
+      setTenant(ten);
+      setTxns(expenses);
+      setTrend(trendData);
+      setCurYear(now.getFullYear());
+      setCurMonth(now.getMonth());
+      setDataReady(true);
+      if (!localStorage.getItem('gastos_tour_seen')) setTimeout(() => setTour(true), 700);
+    } catch (err) {
+      console.error('loadTenantData:', err);
+      setLoadError(err);
+    }
   }
 
   const handleTenantCreated = async (tenantId) => {
@@ -148,6 +158,7 @@ function App() {
   }, [trend, totalSpent]);
 
   /* ── Guards ────────────────────────────────────────────── */
+  if (loadError)             return <ErrorScreen error={loadError} onLogout={() => _sb.auth.signOut()} />;
   if (session === undefined) return <LoadingScreen />;
   if (!session)              return <AuthScreen />;
   if (!profile)              return <LoadingScreen />;
