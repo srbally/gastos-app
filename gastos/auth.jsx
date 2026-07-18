@@ -221,4 +221,42 @@ function LoadingScreen() {
   );
 }
 
-Object.assign(window, { AuthScreen, CreateTenantScreen, LoadingScreen });
+/* Pantalla de error (evita quedarse en "Cargando…" para siempre) */
+function ErrorScreen({ error, onLogout }) {
+  const msg = (error && (error.message || error.error_description || error.details)) || 'Error desconocido';
+  const code = error && (error.code || error.status);
+  return (
+    <div style={{
+      minHeight:'100vh', display:'flex', alignItems:'center',
+      justifyContent:'center', background:'var(--bg)', padding:24,
+    }}>
+      <div style={{ width:'100%', maxWidth:440 }}>
+        <div className="card card-pad" style={{ textAlign:'center' }}>
+          <div style={{ width:52, height:52, borderRadius:14, background:'var(--neg-soft)',
+            color:'var(--neg)', display:'grid', placeItems:'center', margin:'0 auto 16px' }}>
+            {React.cloneElement(Icons.x, { size:26 })}
+          </div>
+          <div style={{ fontWeight:800, fontSize:18, marginBottom:8 }}>No se pudieron cargar los datos</div>
+          <div style={{ fontSize:13.5, color:'var(--muted)', lineHeight:1.55, marginBottom:8 }}>
+            La app no pudo conectarse con la base de datos. Este es el detalle técnico:
+          </div>
+          <div style={{ fontSize:12.5, color:'var(--neg)', background:'var(--neg-soft)',
+            padding:'10px 13px', borderRadius:8, textAlign:'left', wordBreak:'break-word',
+            fontFamily:'var(--font-mono)' }}>
+            {code ? `[${code}] ` : ''}{msg}
+          </div>
+          <div style={{ display:'flex', gap:10, justifyContent:'center', marginTop:20 }}>
+            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+              Reintentar
+            </button>
+            <button className="btn btn-ghost" onClick={onLogout}>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { AuthScreen, CreateTenantScreen, LoadingScreen, ErrorScreen });
