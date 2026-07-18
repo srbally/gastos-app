@@ -123,25 +123,22 @@ function App() {
     document.body.classList.toggle("help-mode", helpMode);
   }, [helpMode]);
 
-  /* ── Guards ────────────────────────────────────────────── */
-  if (session === undefined) return <LoadingScreen />;
-  if (!session)              return <AuthScreen />;
-  if (!profile)              return <LoadingScreen />;
-  if (!profile.current_tenant_id)
-    return <CreateTenantScreen userEmail={session.user.email} onCreated={handleTenantCreated} />;
-  if (!dataReady)            return <LoadingScreen />;
+  /* ── Datos derivados (siempre antes de los guards: reglas de Hooks) ── */
+  const expenseTxns = React.useMemo(() => txns.filter(t => t.type !== "ingreso"), [txns]);
+  const incomeTxns  = React.useMemo(() => txns.filter(t => t.type === "ingreso"), [txns]);
 
-  /* ── Datos derivados ───────────────────────────────────── */
   const byCat = React.useMemo(() => {
     const m = {};
-    txns.forEach(tx => { m[tx.cat] = (m[tx.cat] || 0) + tx.amount; });
+    expenseTxns.forEach(tx => { m[tx.cat] = (m[tx.cat] || 0) + tx.amount; });
     return m;
-  }, [txns]);
+  }, [expenseTxns]);
 
-  const totalSpent  = txns.reduce((s, x) => s + x.amount, 0);
+  const totalSpent  = expenseTxns.reduce((s, x) => s + x.amount, 0);
+  const totalIncome = incomeTxns.reduce((s, x) => s + x.amount, 0);
   const totalBudget = Object.values(BUDGETS).reduce((a, b) => a + b, 0);
-  const balance     = MONTHLY_INCOME - totalSpent;
-  const savingsRate = MONTHLY_INCOME ? Math.round((balance / MONTHLY_INCOME) * 100) : 0;
+  const monthIncome = MONTHLY_INCOME + totalIncome;
+  const balance     = monthIncome - totalSpent;
+  const savingsRate = monthIncome ? Math.round((balance / monthIncome) * 100) : 0;
   const overBudgetCount = CATEGORIES.filter(c => (byCat[c.id] || 0) > (BUDGETS[c.id] || 0)).length;
 
   const trendLive = React.useMemo(() => {
@@ -149,6 +146,14 @@ function App() {
     if (arr.length) arr[arr.length - 1].v = totalSpent;
     return arr;
   }, [trend, totalSpent]);
+
+  /* ── Guards ────────────────────────────────────────────── */
+  if (session === undefined) return <LoadingScreen />;
+  if (!session)              return <AuthScreen />;
+  if (!profile)              return <LoadingScreen />;
+  if (!profile.current_tenant_id)
+    return <CreateTenantScreen userEmail={session.user.email} onCreated={handleTenantCreated} />;
+  if (!dataReady)            return <LoadingScreen />;
 
   /* ── Navegación de mes ─────────────────────────────────── */
   const changeMonth = async (delta) => {
@@ -169,7 +174,8 @@ function App() {
       if (curYear === now.getFullYear() && curMonth === now.getMonth()) {
         setTxns(prev => [expense, ...prev]);
       }
-      showToast(`Gasto de €${fmt(data.amount)} guardado`);
+      const label = data.type === "ingreso" ? "Ingreso" : "Gasto";
+      showToast(`${label} de €${fmt(data.amount)} guardado`);
     } catch (err) {
       showToast('Error: ' + err.message);
     }
@@ -233,7 +239,7 @@ function App() {
                 <div className="grid">
                   <BudgetOverall spent={totalSpent} budget={totalBudget} />
                   <CategoryBreakdown byCat={byCat} total={totalSpent} />
-                  <SharedSettle txns={txns} />
+                  <SharedSettle txns={expenseTxns} />
                 </div>
               </div>
             </div>
@@ -244,13 +250,13 @@ function App() {
 
           {view === "compartidos" && (
             <div className="content-inner fade-up" style={{ maxWidth:560 }}>
-              <SharedSettle txns={txns} />
+              <SharedSettle txns={expenseTxns} />
             </div>
           )}
 
           {view === "metas" && (
             <ComingSoon icon={Icons.target} title="Metas de ahorro"
-              desc="Define objetivos como "fondo de emergencia" o "vacaciones" y sigue el progreso del hogar mes a mes. Próximamente." />
+              desc={'Define objetivos como "fondo de emergencia" o "vacaciones" y sigue el progreso del hogar mes a mes. Próximamente.'} />
           )}
           {view === "reportes" && (
             <ComingSoon icon={Icons.chart} title="Reportes y exportación"
@@ -302,7 +308,10 @@ function App() {
         </div>
       </div>
 
-      <AddExpenseModal open={modal} onClose={() => setModal(false)} onAdd={addExpense} />
+      <BottomNav view={view} setView={setView} overBudgetCount={overBudgetCount}
+        onAdd={() => setModal(true)} />
+
+      <AddTransactionModal open={modal} onClose={() => setModal(false)} onAdd={addExpense} />
       <HelpTooltips active={helpMode} />
       <Tour open={tour} onClose={closeTour} />
 

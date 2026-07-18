@@ -275,6 +275,40 @@ button { font-family: inherit; cursor: pointer; }
   .main-grid { grid-template-columns: 1fr; }
 }
 
+/* ---------- Bottom nav (móvil) ---------- */
+.bottom-nav {
+  display: none;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 500;
+  align-items: center; justify-content: space-around;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-md);
+}
+.bn-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  flex: 1; min-width: 0; background: none; border: none;
+  color: var(--muted); font-size: 10.5px; font-weight: 600;
+  padding: 6px 4px; border-radius: 10px; position: relative;
+}
+.bn-item svg { width: 20px; height: 20px; }
+.bn-item.active { color: var(--primary); }
+.bn-item .bn-badge { position: absolute; top: 0; right: 14px; font-size: 9px; padding: 1px 5px; }
+.bn-fab {
+  width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary); color: #fff; border: none;
+  display: grid; place-items: center; transform: translateY(-16px);
+  box-shadow: var(--shadow-md); transition: background .15s;
+}
+.bn-fab:hover, .bn-fab:active { background: var(--primary-deep); }
+
+@media (max-width: 760px) {
+  .bottom-nav { display: flex; }
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .content { padding-bottom: 92px; }
+  .add-btn-desktop { display: none; }
+}
+
 /* Stat cards */
 .stat {
   background: var(--surface); border: 1px solid var(--border);
@@ -389,6 +423,17 @@ body.help-mode [data-help-target]::after {
   width: 460px; max-width: 100%; background: var(--surface);
   border-radius: var(--r-xl); box-shadow: var(--shadow-lg);
   overflow: hidden; animation: popIn .22s cubic-bezier(.2,.8,.2,1);
+}
+
+.modal-row { display: flex; gap: 14px; }
+.modal-row-amt { flex: 1; }
+.modal-row-payer { width: 150px; }
+
+@media (max-width: 480px) {
+  .modal-backdrop { padding: 0; align-items: flex-end; }
+  .modal { width: 100%; max-width: 100%; border-radius: var(--r-xl) var(--r-xl) 0 0; max-height: 88vh; overflow-y: auto; }
+  .modal-row { flex-wrap: wrap; }
+  .modal-row-payer { width: 100%; }
 }
 @keyframes popIn { from { opacity: 0; transform: translateY(12px) scale(.98); } }
 .modal-head { padding: 20px 22px 0; display: flex; align-items: flex-start; justify-content: space-between; }

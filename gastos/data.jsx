@@ -78,6 +78,7 @@ const normalizeExpense = (e) => ({
   id:        e.id,
   title:     e.title,
   cat:       e.category,
+  type:      e.type || 'gasto',
   amount:    Number(e.amount),
   member:    e.paid_by,
   date:      e.date,
@@ -103,10 +104,10 @@ async function db_loadExpenses(tenantId, year, month) {
   return (data || []).map(normalizeExpense);
 }
 
-async function db_addExpense(tenantId, { title, amount, cat, member, date, recurring }) {
+async function db_addExpense(tenantId, { title, amount, cat, type, member, date, recurring }) {
   const { data, error } = await _sb
     .from('expenses')
-    .insert({ tenant_id: tenantId, title, amount, category: cat, paid_by: member, date, recurring })
+    .insert({ tenant_id: tenantId, title, amount, category: cat, type: type || 'gasto', paid_by: member, date, recurring })
     .select()
     .single();
   if (error) throw error;
@@ -172,7 +173,7 @@ async function db_loadTrend(tenantId) {
 
   const { data } = await _sb
     .from('expenses').select('date, amount')
-    .eq('tenant_id', tenantId).gte('date', from).lte('date', to);
+    .eq('tenant_id', tenantId).eq('type', 'gasto').gte('date', from).lte('date', to);
 
   const sums = {};
   (data || []).forEach(e => {

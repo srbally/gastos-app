@@ -104,11 +104,38 @@ function TopBar({ title, sub, month, onPrevMonth, onNextMonth, helpMode, setHelp
         </button>
       )}
 
-      <button className="btn btn-primary" onClick={onAdd} data-help-target data-tip="agregar">
+      <button className="btn btn-primary add-btn-desktop" onClick={onAdd} data-help-target data-tip="agregar">
         {React.cloneElement(Icons.plus, { size: 17 })}
-        <span>Agregar gasto</span>
+        <span>Agregar</span>
       </button>
     </header>
+  );
+}
+
+/* ---------------- Bottom nav (móvil) ---------------- */
+function BottomNav({ view, setView, onAdd, overBudgetCount }) {
+  return (
+    <nav className="bottom-nav">
+      <button className={"bn-item" + (view === "resumen" ? " active" : "")} onClick={() => setView("resumen")}>
+        {Icons.home}<span>Resumen</span>
+      </button>
+      <button className={"bn-item" + (view === "transacciones" ? " active" : "")} onClick={() => setView("transacciones")}>
+        {Icons.list}<span>Movs.</span>
+      </button>
+
+      <button className="bn-fab" onClick={onAdd} aria-label="Agregar gasto o ingreso"
+        data-help-target data-tip="agregar-movil">
+        {React.cloneElement(Icons.plus, { size: 22 })}
+      </button>
+
+      <button className={"bn-item" + (view === "presupuestos" ? " active" : "")} onClick={() => setView("presupuestos")}>
+        {Icons.wallet}<span>Presup.</span>
+        {overBudgetCount ? <span className="nav-badge bn-badge">{overBudgetCount}</span> : null}
+      </button>
+      <button className={"bn-item" + (view === "ajustes" ? " active" : "")} onClick={() => setView("ajustes")}>
+        {Icons.settings}<span>Ajustes</span>
+      </button>
+    </nav>
   );
 }
 
@@ -207,11 +234,15 @@ function TrendChart({ trend }) {
 
 /* ---------------- Transaction list ---------------- */
 function TxRow({ tx }) {
-  const c = catById(tx.cat);
+  const isIncome = tx.type === "ingreso";
+  const c = isIncome ? null : catById(tx.cat);
   return (
     <div className="tx">
-      <span className="tx-ico" style={{ background: `color-mix(in oklab, ${c.color} 15%, transparent)`, color: c.color }}>
-        {React.cloneElement(c.icon, { size: 19 })}
+      <span className="tx-ico" style={{
+        background: `color-mix(in oklab, ${isIncome ? "var(--pos)" : c.color} 15%, transparent)`,
+        color: isIncome ? "var(--pos)" : c.color,
+      }}>
+        {React.cloneElement(isIncome ? Icons.wallet : c.icon, { size: 19 })}
       </span>
       <div className="tx-main">
         <div className="tx-title">
@@ -219,13 +250,15 @@ function TxRow({ tx }) {
           {tx.recurring && <span style={{ color: "var(--muted)", marginLeft: 7, verticalAlign: "middle", display: "inline-flex" }} title="Recurrente">{Icons.repeat}</span>}
         </div>
         <div className="tx-sub">
-          <span>{c.name}</span>
+          <span>{isIncome ? "Ingreso" : c.name}</span>
           <span style={{ opacity: .5 }}>·</span>
           <span>{fmtDate(tx.date)}</span>
         </div>
       </div>
       <Avatar member={tx.member} size={26} />
-      <div className="tx-amt mono tnum">€{fmt(tx.amount)}</div>
+      <div className="tx-amt mono tnum" style={{ color: isIncome ? "var(--pos)" : undefined }}>
+        {isIncome ? "+" : ""}€{fmt(tx.amount)}
+      </div>
     </div>
   );
 }
@@ -320,6 +353,6 @@ function SharedSettle({ txns }) {
 }
 
 Object.assign(window, {
-  Avatar, Sidebar, TopBar, Stat, CategoryBreakdown, TrendChart,
+  Avatar, Sidebar, TopBar, BottomNav, Stat, CategoryBreakdown, TrendChart,
   TxRow, RecentTransactions, BudgetOverall, SharedSettle,
 });

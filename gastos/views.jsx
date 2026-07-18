@@ -2,7 +2,8 @@
    Gastos — Modal Agregar gasto + vistas secundarias
    ============================================================ */
 
-function AddExpenseModal({ open, onClose, onAdd }) {
+function AddTransactionModal({ open, onClose, onAdd }) {
+  const [type, setType] = React.useState("gasto");
   const [title, setTitle] = React.useState("");
   const [amount, setAmount] = React.useState("");
   const [cat, setCat] = React.useState("comida");
@@ -12,7 +13,7 @@ function AddExpenseModal({ open, onClose, onAdd }) {
 
   React.useEffect(() => {
     if (open) {
-      setTitle(""); setAmount(""); setCat("comida"); setMember("ana"); setRecurring(false);
+      setType("gasto"); setTitle(""); setAmount(""); setCat("comida"); setMember("ana"); setRecurring(false);
       setTimeout(() => inputRef.current && inputRef.current.focus(), 60);
     }
   }, [open]);
@@ -25,13 +26,16 @@ function AddExpenseModal({ open, onClose, onAdd }) {
 
   if (!open) return null;
 
+  const isIncome = type === "ingreso";
   const valid = title.trim() && parseFloat(amount) > 0;
   const submit = () => {
     if (!valid) return;
     onAdd({
+      type,
       title: title.trim(),
       amount: parseFloat(amount),
-      cat, member, recurring,
+      cat: isIncome ? "ingreso" : cat,
+      member, recurring,
       date: new Date().toISOString().slice(0, 10),
     });
     onClose();
@@ -39,11 +43,15 @@ function AddExpenseModal({ open, onClose, onAdd }) {
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal" role="dialog" aria-label="Agregar gasto">
+      <div className="modal" role="dialog" aria-label={isIncome ? "Agregar ingreso" : "Agregar gasto"}>
         <div className="modal-head">
           <div>
-            <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.02em" }}>Agregar gasto</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>Se sumará al mes actual y al reparto del hogar.</div>
+            <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.02em" }}>
+              {isIncome ? "Agregar ingreso" : "Agregar gasto"}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
+              {isIncome ? "Se sumará al balance del mes." : "Se sumará al mes actual y al reparto del hogar."}
+            </div>
           </div>
           <button className="icon-btn" style={{ width: 34, height: 34 }} onClick={onClose} aria-label="Cerrar">
             {React.cloneElement(Icons.x, { size: 17 })}
@@ -52,14 +60,21 @@ function AddExpenseModal({ open, onClose, onAdd }) {
 
         <div className="modal-body">
           <div className="field">
+            <div className="seg">
+              <button className={!isIncome ? "sel" : ""} onClick={() => setType("gasto")}>Gasto</button>
+              <button className={isIncome ? "sel" : ""} onClick={() => setType("ingreso")}>Ingreso</button>
+            </div>
+          </div>
+
+          <div className="field">
             <label>Concepto</label>
             <input ref={inputRef} value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="p. ej. Compra semanal"
+              placeholder={isIncome ? "p. ej. Nómina" : "p. ej. Compra semanal"}
               onKeyDown={e => { if (e.key === "Enter") document.getElementById("amt-input").focus(); }} />
           </div>
 
-          <div style={{ display: "flex", gap: 14 }}>
-            <div className="field" style={{ flex: 1 }}>
+          <div className="modal-row">
+            <div className="field modal-row-amt">
               <label>Importe</label>
               <div className="amount-input">
                 <span>€</span>
@@ -68,8 +83,8 @@ function AddExpenseModal({ open, onClose, onAdd }) {
                   onKeyDown={e => { if (e.key === "Enter") submit(); }} />
               </div>
             </div>
-            <div className="field" style={{ width: 150 }}>
-              <label>Pagado por</label>
+            <div className="field modal-row-payer">
+              <label>{isIncome ? "Recibido por" : "Pagado por"}</label>
               <div className="member-pick">
                 {MEMBERS.map(m => (
                   <button key={m.id} className={member === m.id ? "sel" : ""} onClick={() => setMember(m.id)} title={m.name}>
@@ -80,31 +95,33 @@ function AddExpenseModal({ open, onClose, onAdd }) {
             </div>
           </div>
 
-          <div className="field">
-            <label>Categoría</label>
-            <div className="seg">
-              {CATEGORIES.map(c => (
-                <button key={c.id} className={cat === c.id ? "sel" : ""} onClick={() => setCat(c.id)}>
-                  <span style={{ color: cat === c.id ? "var(--primary)" : c.color, display: "inline-flex" }}>
-                    {React.cloneElement(c.icon, { size: 15 })}
-                  </span>
-                  {c.name}
-                </button>
-              ))}
+          {!isIncome && (
+            <div className="field">
+              <label>Categoría</label>
+              <div className="seg">
+                {CATEGORIES.map(c => (
+                  <button key={c.id} className={cat === c.id ? "sel" : ""} onClick={() => setCat(c.id)}>
+                    <span style={{ color: cat === c.id ? "var(--primary)" : c.color, display: "inline-flex" }}>
+                      {React.cloneElement(c.icon, { size: 15 })}
+                    </span>
+                    {c.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13.5, fontWeight: 600, color: "var(--ink-soft)" }}>
             <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)}
               style={{ width: 17, height: 17, accentColor: "var(--primary)" }} />
-            Es un gasto recurrente (cada mes)
+            {isIncome ? "Es un ingreso recurrente (cada mes)" : "Es un gasto recurrente (cada mes)"}
           </label>
         </div>
 
         <div className="modal-foot">
           <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" disabled={!valid} style={{ opacity: valid ? 1 : .5 }} onClick={submit}>
-            {React.cloneElement(Icons.check, { size: 17 })} Guardar gasto
+            {React.cloneElement(Icons.check, { size: 17 })} {isIncome ? "Guardar ingreso" : "Guardar gasto"}
           </button>
         </div>
       </div>
@@ -192,4 +209,4 @@ function ComingSoon({ icon, title, desc }) {
   );
 }
 
-Object.assign(window, { AddExpenseModal, TransactionsView, BudgetsView, ComingSoon });
+Object.assign(window, { AddTransactionModal, TransactionsView, BudgetsView, ComingSoon });

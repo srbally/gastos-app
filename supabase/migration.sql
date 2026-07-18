@@ -238,3 +238,20 @@ begin
 end;
 $$;
 grant execute on function public.create_tenant(text) to authenticated;
+
+-- ── Ingresos ─────────────────────────────────────────────────
+-- Permite registrar ingresos además de gastos en la misma tabla.
+-- Seguro de volver a pegar y correr aunque ya hayas migrado antes.
+
+alter table public.expenses
+  add column if not exists type text not null default 'gasto';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'expenses_type_check'
+  ) then
+    alter table public.expenses
+      add constraint expenses_type_check check (type in ('gasto','ingreso'));
+  end if;
+end $$;
