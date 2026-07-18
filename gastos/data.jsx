@@ -115,20 +115,40 @@ async function db_addExpense(tenantId, { title, amount, cat, type, member, date,
 }
 
 async function db_loadMembers(tenantId) {
-  const { data, error } = await _sb
+  // Dos consultas y unión en cliente: no dependemos de que PostgREST
+  // conozca una relación FK directa entre tenant_members y profiles
+  // (apuntan a auth.users por separado, no hay FK entre sí).
+  const { data: memberRows, error: mErr } = await _sb
     .from('tenant_members')
-    .select('role, profiles(id, full_name, initials, color)')
+    .select('role, user_id')
     .eq('tenant_id', tenantId);
-  if (error) throw error;
-  return (data || [])
-    .filter(r => r.profiles)
-    .map(r => ({
-      id:       r.profiles.id,
-      name:     r.profiles.full_name || 'Usuario',
-      initials: r.profiles.initials  || (r.profiles.full_name || 'U')[0].toUpperCase(),
-      color:    r.profiles.color     || 'oklch(0.62 0.12 162)',
-      role:     r.role,
-    }));
+  if (mErr) throw mErr;
+
+  const ids = (memberRows || []).map(r => r.user_id);
+  if (!ids.length) return [];
+
+  const { data: profs, error: pErr } = await _sb
+    .from('profiles')
+    .select('id, full_name, initials, color')
+    .in('id', ids);
+  if (pErr) throw pErr;
+
+  const byId = {};
+  (profs || []).forEach(p => { byId[p.id] = p; });
+
+  return (memberRows || [])
+    .map(r => {
+      const p = byId[r.user_id];
+      if (!p) return null;
+      return {
+        id:       p.id,
+        name:     p.full_name || 'Usuario',
+        initials: p.initials  || (p.full_name || 'U')[0].toUpperCase(),
+        color:    p.color     || 'oklch(0.62 0.12 162)',
+        role:     r.role,
+      };
+    })
+    .filter(Boolean);
 }
 
 async function db_loadBudgets(tenantId) {
