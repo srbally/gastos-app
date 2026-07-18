@@ -3,7 +3,8 @@
    ============================================================ */
 
 const TIP_CONTENT = {
-  agregar:     { h: "Agregar un gasto", b: "Registra cualquier gasto del hogar en segundos. Elige categoría, quién pagó y si es recurrente." },
+  agregar:       { h: "Agregar un gasto o ingreso", b: "Registra cualquier movimiento del hogar en segundos. Elige categoría, quién pagó y si es recurrente." },
+  "agregar-movil": { h: "Agregar un gasto o ingreso", b: "Registra cualquier movimiento del hogar en segundos. Elige categoría, quién pagó y si es recurrente." },
   mes:         { h: "Cambiar de mes", b: "Navega entre meses para revisar gastos pasados o planificar el siguiente." },
   buscar:      { h: "Buscar", b: "Filtra movimientos por nombre, categoría o miembro al instante." },
   miembros:    { h: "Miembros del hogar", b: "Todos los que comparten cuentas. Cada gasto se asigna a quien pagó y se reparte de forma equitativa." },
